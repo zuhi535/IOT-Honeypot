@@ -19,8 +19,6 @@ A lightweight **MQTT honeypot** that sits behind an [Eclipse Mosquitto](https://
 - [Dashboard](#-dashboard)
 - [Known Limitation: the `client_id` Field](#-known-limitation-the-client_id-field)
 - [Security Notes](#-security-notes)
-- [Roadmap / Possible Next Steps](#-roadmap--possible-next-steps)
-- [License](#-license)
 
 ---
 
@@ -281,19 +279,3 @@ This project is intentionally permissive so that it behaves like an easy target:
 - The Mosquitto broker allows **anonymous connections** (`allow_anonymous true`) and has **no TLS/authentication** configured.
 - It is designed for **research, learning, and controlled/lab environments** — do **not** expose port `1883` directly to the public internet without additional network isolation (e.g. an isolated VLAN, a reverse proxy, or a cloud security group limiting inbound access), unless that is a deliberate part of your research setup.
 - The dashboard (`dashboard/app.py`) runs Flask's built-in development server and does **not** implement authentication — treat it as a local/internal tool only, or put it behind your own auth layer before exposing it more broadly.
-
----
-
-## 🗺️ Roadmap / Possible Next Steps
-
-- [ ] Correlate Mosquitto broker logs with honeypot events to recover real source IPs.
-- [ ] Rewrite the listener as a minimal custom MQTT/TCP server to capture connection-level metadata directly.
-- [ ] Add authentication to the Flask dashboard before deploying it beyond a local/lab network.
-- [ ] Expand `SUSPICIOUS_KEYWORDS` detection with pattern/regex-based or rate-based (brute-force) heuristics, not just static keyword matching.
-- [ ] Containerize the honeypot listener and dashboard themselves (in addition to the broker) for a fully `docker compose up` deployment.
-
----
-
-## 📄 License
-
-No license file is currently included in this repository. If you plan to share, fork, or reuse this project publicly, consider adding a `LICENSE` file (e.g. MIT, Apache-2.0) to clarify how others may use the code.
