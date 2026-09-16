@@ -1,185 +1,429 @@
 <!DOCTYPE html>
 <html lang="hu">
-
 <head>
-
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="5">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IoT Honeypot — Monitor</title>
 
-<title>IoT Honeypot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b12;
+    --panel: #12141c;
+    --panel-border: #232634;
+    --text: #e5e7eb;
+    --muted: #8b90a3;
+    --accent: #8b5cf6;
+    --accent-2: #22d3ee;
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.08);
+    --success: #34d399;
+  }
 
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(139, 92, 246, 0.10), transparent 40%),
+      radial-gradient(circle at 85% 10%, rgba(34, 211, 238, 0.08), transparent 40%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px 64px;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  /* --- Header -------------------------------------------------- */
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--panel-border);
+    padding-bottom: 18px;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--accent-2);
+    text-transform: uppercase;
+    margin: 0 0 6px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .live-dot { animation: none; }
+  }
+
+  /* --- Stat cards ------------------------------------------------ */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .stat-value.warn  { color: #facc15; }
+  .stat-value.topic { font-size: 20px; color: var(--accent); word-break: break-word; }
+
+  /* --- Charts ------------------------------------------------------ */
+  .charts {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .charts .full { grid-column: 1 / -1; }
+
+  .card h2 {
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+
+  .card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+  }
+
+  /* --- Latest event banner ------------------------------------------ */
+  .latest {
+    margin-bottom: 16px;
+  }
+
+  .latest dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .latest dt { color: var(--muted); }
+  .latest dd { margin: 0; color: var(--text); }
+  .latest .empty { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+  /* --- Table --------------------------------------------------------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  thead th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  tbody td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--text);
+  }
+
+  tbody tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+  tr.suspicious td {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  tr.suspicious td:first-child {
+    border-left: 2px solid var(--danger);
+  }
+
+  .table-wrap { overflow-x: auto; }
+
+  @media (max-width: 860px) {
+    .stats { grid-template-columns: 1fr; }
+    .charts { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
 
-<body class="bg-light">
+<body>
+<div class="wrap">
 
-<div class="container mt-5">
+  <div class="topbar">
+    <div>
+      <p class="eyebrow">// iot honeypot monitor</p>
+      <h1>MQTT esemény dashboard</h1>
+    </div>
+    <span class="live"><span class="live-dot"></span> élő adatfolyam · 5 mp-enként frissül</span>
+  </div>
 
-<h1 class="mb-4">
-IoT Honeypot Dashboard
-</h1>
+  <!-- Statisztika kártyák -->
+  <div class="stats">
+    <div class="card">
+      <p class="stat-label">Összes esemény</p>
+      <p class="stat-value" id="stat-total">{{ total_logs }}</p>
+    </div>
+    <div class="card">
+      <p class="stat-label">Mai események</p>
+      <p class="stat-value warn" id="stat-today">{{ today_logs }}</p>
+    </div>
+    <div class="card">
+      <p class="stat-label">Leggyakoribb topic</p>
+      <p class="stat-value topic" id="stat-top-topic">
+        {% if top_topic %}{{ top_topic[0] }} <span style="color: var(--muted); font-size: 14px;">({{ top_topic[1] }}x)</span>{% else %}Nincs adat{% endif %}
+      </p>
+    </div>
+  </div>
 
-<div class="row">
+  <!-- Grafikonok -->
+  <div class="charts">
+    <div class="card">
+      <h2>Üzenetek topiconként</h2>
+      <img id="chart-bar" src="{{ url_for('chart_topics_bar') }}?v={{ chart_version }}" alt="Oszlopdiagram: üzenetek topiconként">
+    </div>
+    <div class="card">
+      <h2>Topicok megoszlása</h2>
+      <img id="chart-pie" src="{{ url_for('chart_topics_pie') }}?v={{ chart_version }}" alt="Kördiagram: topicok megoszlása">
+    </div>
+    <div class="card full">
+      <h2>Események időbeli alakulása</h2>
+      <img id="chart-line" src="{{ url_for('chart_events_line') }}?v={{ chart_version }}" alt="Vonaldiagram: események időbeli alakulása">
+    </div>
+  </div>
 
-<div class="col-md-4">
+  <!-- Legutóbbi esemény -->
+  <div class="card latest">
+    <h2>Legutóbbi esemény</h2>
+    <div id="latest-content">
+      {% if latest_log %}
+      <dl>
+        <dt>ID</dt><dd>{{ latest_log[0] }}</dd>
+        <dt>Idő</dt><dd>{{ latest_log[1] }}</dd>
+        <dt>Topic</dt><dd>{{ latest_log[2] }}</dd>
+        <dt>Payload</dt><dd>{{ latest_log[3] }}</dd>
+      </dl>
+      {% else %}
+      <p class="empty">Még nem érkezett esemény.</p>
+      {% endif %}
+    </div>
+  </div>
 
-<div class="card text-bg-primary mb-3">
-
-<div class="card-body">
-
-<h5>Összes esemény</h5>
-
-<h2>{{ total_logs }}</h2>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-md-4">
-
-<div class="card text-bg-warning mb-3">
-
-<div class="card-body">
-
-<h5>Mai események</h5>
-
-<h2>{{ today_logs }}</h2>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-md-4">
-
-<div class="card text-bg-success mb-3">
-
-<div class="card-body">
-
-<h5>Leggyakoribb Topic</h5>
-
-<h5>
-
-{% if top_topic %}
-
-{{ top_topic[0] }}
-
-{% else %}
-
-Nincs adat
-
-{% endif %}
-
-</h5>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-
-<div class="alert alert-secondary">
-
-<b>Legutóbbi esemény:</b>
-
-<br><br>
-
-{% if latest_log %}
-
-ID: {{ latest_log[0] }}
-
-<br>
-
-Idő: {{ latest_log[1] }}
-
-<br>
-
-Topic: {{ latest_log[2] }}
-
-<br>
-
-Payload: {{ latest_log[3] }}
-
-{% endif %}
+  <!-- Utolsó események táblázat -->
+  <div class="card">
+    <h2>Utolsó MQTT események</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Idő</th>
+            <th>Topic</th>
+            <th>Payload</th>
+          </tr>
+        </thead>
+        <tbody id="logs-tbody">
+          {% for log in logs %}
+          <tr class="{{ 'suspicious' if ('admin' in log[3]|lower or 'root' in log[3]|lower or 'password' in log[3]|lower) else '' }}">
+            <td>{{ log[0] }}</td>
+            <td>{{ log[1] }}</td>
+            <td>{{ log[2] }}</td>
+            <td>{{ log[3] }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">Nincs még naplózott esemény.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
 </div>
 
+<script>
+/*
+ * 5 másodpercenként lekérdezi a /api/data JSON végpontot, és csak
+ * a megváltozott tartalmakat írja felül a DOM-ban — az oldal
+ * emiatt NEM töltődik újra, így nem villog.
+ *
+ * A grafikonokat is csak "kép betöltve" után cseréljük ki (előbb egy
+ * láthatatlan Image objektumba töltjük be az újat), így nem villan
+ * fel egy üres/töredezett kép csere közben.
+ */
 
+const SUSPICIOUS_WORDS = ["admin", "root", "password"];
 
-<div class="card">
+function isSuspicious(payload) {
+  const lower = (payload || "").toLowerCase();
+  return SUSPICIOUS_WORDS.some((word) => lower.includes(word));
+}
 
-<div class="card-header">
+function escapeHtml(value) {
+  const div = document.createElement("div");
+  div.textContent = value ?? "";
+  return div.innerHTML;
+}
 
-Utolsó MQTT események
+function updateStats(data) {
+  document.getElementById("stat-total").textContent = data.total_logs;
+  document.getElementById("stat-today").textContent = data.today_logs;
 
-</div>
+  const topTopicEl = document.getElementById("stat-top-topic");
+  if (data.top_topic) {
+    const [topic, count] = data.top_topic;
+    topTopicEl.innerHTML =
+      `${escapeHtml(topic)} <span style="color: var(--muted); font-size: 14px;">(${count}x)</span>`;
+  } else {
+    topTopicEl.textContent = "Nincs adat";
+  }
+}
 
-<div class="card-body">
+function updateLatest(data) {
+  const container = document.getElementById("latest-content");
+  const log = data.latest_log;
 
-<table class="table table-striped">
+  if (!log) {
+    container.innerHTML = '<p class="empty">Még nem érkezett esemény.</p>';
+    return;
+  }
 
-<thead>
+  container.innerHTML = `
+    <dl>
+      <dt>ID</dt><dd>${escapeHtml(log[0])}</dd>
+      <dt>Idő</dt><dd>${escapeHtml(log[1])}</dd>
+      <dt>Topic</dt><dd>${escapeHtml(log[2])}</dd>
+      <dt>Payload</dt><dd>${escapeHtml(log[3])}</dd>
+    </dl>
+  `;
+}
 
-<tr>
+function updateTable(data) {
+  const tbody = document.getElementById("logs-tbody");
+  const logs = data.logs || [];
 
-<th>ID</th>
+  if (logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Nincs még naplózott esemény.</td></tr>';
+    return;
+  }
 
-<th>Idő</th>
+  tbody.innerHTML = logs.map((log) => {
+    const rowClass = isSuspicious(log[3]) ? "suspicious" : "";
+    return `
+      <tr class="${rowClass}">
+        <td>${escapeHtml(log[0])}</td>
+        <td>${escapeHtml(log[1])}</td>
+        <td>${escapeHtml(log[2])}</td>
+        <td>${escapeHtml(log[3])}</td>
+      </tr>
+    `;
+  }).join("");
+}
 
-<th>Topic</th>
+function swapImageWhenLoaded(imgEl, newSrc) {
+  const preloader = new Image();
+  preloader.onload = () => { imgEl.src = newSrc; };
+  preloader.src = newSrc;
+}
 
-<th>Payload</th>
+function updateCharts(chartVersion) {
+  swapImageWhenLoaded(document.getElementById("chart-bar"), `/chart/topics-bar.png?v=${chartVersion}`);
+  swapImageWhenLoaded(document.getElementById("chart-pie"), `/chart/topics-pie.png?v=${chartVersion}`);
+  swapImageWhenLoaded(document.getElementById("chart-line"), `/chart/events-line.png?v=${chartVersion}`);
+}
 
-</tr>
+async function refreshDashboard() {
+  try {
+    const response = await fetch("/api/data");
+    if (!response.ok) return;
 
-</thead>
+    const data = await response.json();
 
-<tbody>
+    updateStats(data);
+    updateLatest(data);
+    updateTable(data);
+    updateCharts(data.chart_version);
+  } catch (err) {
+    // Csendben kihagyjuk ezt a kört, ha épp nem elérhető a szerver
+    console.error("Dashboard frissítési hiba:", err);
+  }
+}
 
-{% for log in logs %}
-
-{% if "admin" in log[3]|lower or
-      "root" in log[3]|lower or
-      "password" in log[3]|lower %}
-
-<tr class="table-danger">
-
-{% else %}
-
-<tr>
-
-{% endif %}
-
-<td>{{ log[0] }}</td>
-
-<td>{{ log[1] }}</td>
-
-<td>{{ log[2] }}</td>
-
-<td>{{ log[3] }}</td>
-
-</tr>
-
-{% endfor %}
-
-
-</tbody>
-
-</table>
-
-</div>
-
-</div>
-
-</div>
+setInterval(refreshDashboard, 5000);
+</script>
 
 </body>
-
 </html>

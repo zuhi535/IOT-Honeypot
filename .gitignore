@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/*.log
+
+# Docker runtime
+mosquitto/data/
+mosquitto/log/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
